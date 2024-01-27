@@ -11,41 +11,40 @@ struct Node {
 
 struct comparator {
    bool operator()(Node *a, Node *b) {
-      return (a -> freq) - (b -> freq);
+      return (a -> freq) > (b -> freq);
    }
 };
 
 class HuffmanEncoder {
-private:
+public:
    priority_queue<Node*, vector<Node*>, comparator> pq;
-   map<char, string> encoderMap;
-   map<string, char> decoderMap;
-   string tmpPath;
+   unordered_map<char, vector<bool>> encoderMap;
+   map<vector<bool>, char> decoderMap;
 
-   void encodedPath(Node *node, string &path, char target) {
+   void buildHuffmanCodes(Node *node, vector<bool> &path) {
       if (node == NULL) {
          return;
       }
 
-      if (node -> data == target && node -> left == NULL && node -> right == NULL) {
-         tmpPath = path;
+      if (node -> data != '$') {
+         encoderMap[node -> data] = path;
+         decoderMap[path] = node -> data;
          return;
       }
 
-      path.push_back('0');
-      encodedPath(node -> left, path, target);
+      path.push_back(0);
+      buildHuffmanCodes(node -> left, path);
 
       path.pop_back();
 
-      path.push_back('1');
-      encodedPath(node -> right, path, target);
+      path.push_back(1);
+      buildHuffmanCodes(node -> right, path);
 
       path.pop_back();
    }
 
-public:
-   string encode(string data) {
-      map<char, int> frequencyMap;
+   vector<bool> encode(string data) {
+      unordered_map<char, int> frequencyMap;
       for (char c: data) {
          frequencyMap[c]++;
       }
@@ -78,29 +77,26 @@ public:
       }
 
       Node *root = pq.top();
-      string tmpP = "";
-      for (auto tmp: frequencyMap) {
-         char character = tmp.first;
-         encodedPath(root, tmpP, character);
-         encoderMap[character] = tmpPath;
-         decoderMap[tmpPath] = character;
-      }  
+      vector<bool> tmp;
+      buildHuffmanCodes(root, tmp);
 
-      string encodedString = ""; // inefficient | string not to be used
+      vector<bool> encodedString;
       for (char c: data) {
-         encodedString += encoderMap[c];
+         for (bool bit: encoderMap[c]) {
+            encodedString.push_back(bit);
+         }
       }
       return encodedString;
    }
 
-   string decode(string encodedString) {
-      string tmp = "";
+   string decode(vector<bool> encodedString) {
+      vector<bool> tmp;
       string decodedString = "";
-      for (char c: encodedString) {
-         tmp += c;
+      for (bool c: encodedString) {
+         tmp.push_back(c);
          if (decoderMap.find(tmp) != decoderMap.end()) {
             decodedString += decoderMap[tmp];
-            tmp = "";
+            tmp = vector<bool>();
          }
       }
 
@@ -120,12 +116,23 @@ int main() {
          s += " ";
       s += tmp;
    }
-   
+
    HuffmanEncoder hf;
-   string encodedString = hf.encode(s);
-   cout << encodedString << "\n";
+
+   cout << "Compressed Form: ";
+   vector<bool> encodedString = hf.encode(s);
+
+   for (bool ele: encodedString) {
+      cout << ele;
+   }
+   cout << "\n";
 
    string decodedString = hf.decode(encodedString);
-   cout << decodedString << "\n";
+   cout << "Decompressed Form: " << decodedString << "\n";
+
+   cout << "\n";
+
+   cout << "Size of source data: " << s.size() * 8 << "\n";
+   cout << "Size of compressed data: " << encodedString.size() << "\n";
    return 0;
 }
