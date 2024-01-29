@@ -117,7 +117,7 @@ void createCompressedBinary(string compressedData) {
 
    if (!byte.empty()) {
       while (byte.size() < 8)
-         byte = "0" + byte;
+         byte += "0";
       char ch = stoi(byte, nullptr, 2);
       outFile.put(ch);
    }
@@ -161,7 +161,7 @@ int main() {
       ....
     
     * Main Data
-      total number of bits ===> ?????
+      total size ===> 4 byte
       1101010101010........
    */
 
@@ -180,9 +180,10 @@ int main() {
    int countOfUniqueCharacters = hf.frequencyMap.size();
    string mapData = numberToBinaryString(countOfUniqueCharacters, 8);
 
-   cout << countOfUniqueCharacters << "\n";
-   cout << mapData << "\n";
+   // cout << countOfUniqueCharacters << "\n";
+   // cout << mapData << "\n";
 
+   cout << hf.frequencyMap.size() << "\n";
    for (auto tmp: hf.frequencyMap) {
       int ch = tmp.first - '\0';
       int f = tmp.second;
@@ -194,9 +195,12 @@ int main() {
       mapData += key + freq;
    }
 
-   string binaryData = mapData + compressedData;
+   string countOfBitsInData = numberToBinaryString(compressedData.size(), 32);
 
-   // cout << mapData << "\n";
+   string binaryData = mapData + countOfBitsInData + compressedData;
+
+   cout << compressedData.size() << "\n";
+   cout << compressedData << "\n";
 
    createCompressedBinary(binaryData);
    return 0;

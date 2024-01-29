@@ -118,8 +118,8 @@ int main() {
 
    map<char, int> frequencyMap;
 
-   vector<int> buffer(istreambuf_iterator<char>(file), {});
-
+   vector<char> buffer(istreambuf_iterator<char>(file), {});
+   
    int size = buffer[0];
    int i = 2;
    while (size--) {
@@ -131,13 +131,39 @@ int main() {
       i += 2;
    }
 
+   cout << frequencyMap.size() << "\n";
    for (auto tmp: frequencyMap) {
       cout << tmp.first << " " << tmp.second << "\n";
    }
 
-   cout << frequencyMap.size() << "\n";
+   i--;
+
+   int sizeOfData = 0;
+   for (int l = 3; l >= 0; l--) {
+      for (int k = 7; k >= 0; k--) {
+         bool bit = int(buffer[i]) & (1 << k);
+         if (bit)
+            sizeOfData += 1 << (k + (8 * l));
+      }
+      i++;
+   }
+   cout << "count of bits: " << sizeOfData << "\n";
+
+   string data = "";
+   int currentBitCount = 0;
+
+   for (; i < buffer.size(); i++) {
+      // cout << int(buffer[i]) << "\n";
+      for (int j = 7; j >= 0; j--) {
+         currentBitCount++;
+         if (currentBitCount > sizeOfData) break;
+         bool bit = char(buffer[i]) & (1 << j);
+         data += bit + '0';
+      }
+   }
+
+   cout << data << "\n";
 
    file.close();
-
    return 0;
 }
