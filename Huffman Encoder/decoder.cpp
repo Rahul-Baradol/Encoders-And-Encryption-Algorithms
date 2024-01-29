@@ -1,4 +1,5 @@
 #include <bits/stdc++.h>
+#include <fstream>
 
 using namespace std;
 
@@ -18,10 +19,10 @@ struct comparator {
 class HuffmanEncoder {
 public:
    priority_queue<Node*, vector<Node*>, comparator> pq;
-   unordered_map<char, vector<bool>> encoderMap;
-   map<vector<bool>, char> decoderMap;
+   unordered_map<char, string> encoderMap;
+   unordered_map<string, char> decoderMap;
 
-   void buildHuffmanCodes(Node *node, vector<bool> &path) {
+   void buildHuffmanCodes(Node *node, string &path) {
       if (node == NULL) {
          return;
       }
@@ -32,23 +33,18 @@ public:
          return;
       }
 
-      path.push_back(0);
+      path.push_back('0');
       buildHuffmanCodes(node -> left, path);
 
       path.pop_back();
 
-      path.push_back(1);
+      path.push_back('1');
       buildHuffmanCodes(node -> right, path);
 
       path.pop_back();
    }
 
-   vector<bool> encode(string data) {
-      unordered_map<char, int> frequencyMap;
-      for (char c: data) {
-         frequencyMap[c]++;
-      }
-
+   void buildMaps(unordered_map<char, int> frequencyMap) {
       for (auto tmp: frequencyMap) {
          char character = tmp.first;
          int frequency = tmp.second;
@@ -71,32 +67,24 @@ public:
          Node *node = (Node*) malloc(sizeof(Node));
          node -> data = '$';
          node -> freq = (top1 -> freq) + (top2 -> freq);
-         node -> left = top1;
-         node -> right = top2;
+         node -> left = top2;
+         node -> right = top1;
          pq.push(node);
       }
 
       Node *root = pq.top();
-      vector<bool> tmp;
+      string tmp = "";
       buildHuffmanCodes(root, tmp);
-
-      vector<bool> encodedString;
-      for (char c: data) {
-         for (bool bit: encoderMap[c]) {
-            encodedString.push_back(bit);
-         }
-      }
-      return encodedString;
    }
 
-   string decode(vector<bool> encodedString) {
-      vector<bool> tmp;
+   string decode(string encodedString) {
+      string tmp = "";
       string decodedString = "";
-      for (bool c: encodedString) {
+      for (char c: encodedString) {
          tmp.push_back(c);
          if (decoderMap.find(tmp) != decoderMap.end()) {
             decodedString += decoderMap[tmp];
-            tmp = vector<bool>();
+            tmp = "";
          }
       }
 
@@ -104,35 +92,52 @@ public:
    }
 };
 
-int main() {
-   int numberOfWords;
-   cin >> numberOfWords;
+std::string negativeIntToBinary(int number) {
+    // Convert the negative number to its Two's Complement representation
+    unsigned int twosComplement = static_cast<unsigned int>(number);
+    twosComplement = ~twosComplement + 1; // Calculate Two's Complement
 
-   string s = "";
-   for (int i = 0; i < numberOfWords; i++) {
-      string tmp;
-      cin >> tmp;
-      if (i != 0)
-         s += " ";
-      s += tmp;
+    // Convert the Two's Complement representation to 8-bit binary string
+    return std::bitset<32>(twosComplement).to_string().substr(24); // Extract last 8 bits
+}
+
+std::string positiveIntToBinary(unsigned int number) {
+    // Convert the positive number to binary string using std::bitset with size 8
+    return std::bitset<8>(number).to_string();
+}
+
+int main() {
+   ifstream file("compressed.bin", ios::binary);
+
+   if (!file.is_open()) {
+      std::cerr << "Error opening file!" << std::endl;
+      return 1;
    }
 
    HuffmanEncoder hf;
 
-   cout << "Compressed Form: ";
-   vector<bool> encodedString = hf.encode(s);
+   map<char, int> frequencyMap;
 
-   for (bool ele: encodedString) {
-      cout << ele;
+   vector<int> buffer(istreambuf_iterator<char>(file), {});
+
+   int size = buffer[0];
+   int i = 2;
+   while (size--) {
+      char ch = buffer[i-1];
+      int freq = buffer[i];
+
+      frequencyMap[ch] = freq;
+
+      i += 2;
    }
-   cout << "\n";
 
-   string decodedString = hf.decode(encodedString);
-   cout << "Decompressed Form: " << decodedString << "\n";
+   for (auto tmp: frequencyMap) {
+      cout << tmp.first << " " << tmp.second << "\n";
+   }
 
-   cout << "\n";
+   cout << frequencyMap.size() << "\n";
 
-   cout << "Size of source data: " << s.size() * 8 << "\n";
-   cout << "Size of compressed data: " << encodedString.size() << "\n";
+   file.close();
+
    return 0;
 }

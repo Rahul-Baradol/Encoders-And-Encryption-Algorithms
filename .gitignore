@@ -1,1 +1,4 @@
 *.exe
+*.txt
+*.bin
+.vscode
