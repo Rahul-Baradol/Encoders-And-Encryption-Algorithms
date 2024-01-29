@@ -5,7 +5,7 @@ using namespace std;
 
 struct Node {
    char data;
-   int freq;
+   long long int freq;
    Node *left;
    Node *right;
 };
@@ -19,15 +19,15 @@ struct comparator {
 class HuffmanEncoder {
 public:
    priority_queue<Node*, vector<Node*>, comparator> pq;
-   unordered_map<char, string> encoderMap;
-   unordered_map<string, char> decoderMap;
+   map<char, string> encoderMap;
+   map<string, char> decoderMap;
 
    void buildHuffmanCodes(Node *node, string &path) {
       if (node == NULL) {
          return;
       }
 
-      if (node -> data != '$') {
+      if (node -> data != '\0') {
          encoderMap[node -> data] = path;
          decoderMap[path] = node -> data;
          return;
@@ -44,10 +44,10 @@ public:
       path.pop_back();
    }
 
-   void buildMaps(unordered_map<char, int> frequencyMap) {
+   void buildMaps(map<char, long long int> frequencyMap) {
       for (auto tmp: frequencyMap) {
          char character = tmp.first;
-         int frequency = tmp.second;
+         long long int frequency = tmp.second;
 
          Node *node = (Node*) malloc(sizeof(Node));
          node -> data = character;
@@ -65,7 +65,7 @@ public:
          pq.pop();
 
          Node *node = (Node*) malloc(sizeof(Node));
-         node -> data = '$';
+         node -> data = '\0';
          node -> freq = (top1 -> freq) + (top2 -> freq);
          node -> left = top2;
          node -> right = top1;
@@ -92,20 +92,6 @@ public:
    }
 };
 
-std::string negativeIntToBinary(int number) {
-    // Convert the negative number to its Two's Complement representation
-    unsigned int twosComplement = static_cast<unsigned int>(number);
-    twosComplement = ~twosComplement + 1; // Calculate Two's Complement
-
-    // Convert the Two's Complement representation to 8-bit binary string
-    return std::bitset<32>(twosComplement).to_string().substr(24); // Extract last 8 bits
-}
-
-std::string positiveIntToBinary(unsigned int number) {
-    // Convert the positive number to binary string using std::bitset with size 8
-    return std::bitset<8>(number).to_string();
-}
-
 int main() {
    ifstream file("compressed.bin", ios::binary);
 
@@ -114,32 +100,48 @@ int main() {
       return 1;
    }
 
-   HuffmanEncoder hf;
-
-   map<char, int> frequencyMap;
+   map<char, long long int> frequencyMap;
 
    vector<char> buffer(istreambuf_iterator<char>(file), {});
    
-   int size = buffer[0];
+   int size = 0;
+
+   for (int bit = 7; bit >= 0; bit--) {
+      bool bbb = buffer[0] & (1 << bit);
+      if (bbb) {
+         size += 1 << bit;
+      }
+   }
+
    int i = 2;
    while (size--) {
       char ch = buffer[i-1];
-      int freq = buffer[i];
+      long long freq = 0;
+
+      for (int l = 7; l >= 0; l--) {
+         for (int k = 7; k >= 0; k--) {
+            bool bit = buffer[i] & (1 << k);
+            if (bit)
+               freq += 1 << (k + (8 * l));
+         }
+         i++;
+      }
 
       frequencyMap[ch] = freq;
 
-      i += 2;
+      // i += 2;
+      i++;
    }
 
-   cout << frequencyMap.size() << "\n";
+   // cout << frequencyMap.size() << "\n";
    for (auto tmp: frequencyMap) {
       cout << tmp.first << " " << tmp.second << "\n";
    }
 
    i--;
 
-   int sizeOfData = 0;
-   for (int l = 3; l >= 0; l--) {
+   long long int sizeOfData = 0;
+   for (int l = 7; l >= 0; l--) {
       for (int k = 7; k >= 0; k--) {
          bool bit = int(buffer[i]) & (1 << k);
          if (bit)
@@ -147,10 +149,10 @@ int main() {
       }
       i++;
    }
-   cout << "count of bits: " << sizeOfData << "\n";
+   // cout << "count of bits: " << sizeOfData << "\n";
 
    string data = "";
-   int currentBitCount = 0;
+   long long int currentBitCount = 0;
 
    for (; i < buffer.size(); i++) {
       // cout << int(buffer[i]) << "\n";
@@ -162,7 +164,22 @@ int main() {
       }
    }
 
-   cout << data << "\n";
+   HuffmanEncoder hf;
+   hf.buildMaps(frequencyMap);
+
+   cout << "|||||||||||||||||||||||\n\n";
+
+   for (auto tmp: hf.encoderMap) {
+      cout << tmp.first << " " << tmp.second << "\n";
+   }
+
+   string decompressedData = hf.decode(data);
+   cout << decompressedData;
+
+   ofstream outFile("output.txt", ios::binary);
+   for (char cc: decompressedData) {
+      outFile.put(cc);
+   }
 
    file.close();
    return 0;

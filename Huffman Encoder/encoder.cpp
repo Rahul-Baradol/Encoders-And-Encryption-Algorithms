@@ -4,7 +4,7 @@ using namespace std;
 
 struct Node {
    char data;
-   long long freq;
+   long long int freq;
    Node *left;
    Node *right;
 };
@@ -18,16 +18,16 @@ struct comparator {
 class HuffmanEncoder {
 public:
    priority_queue<Node*, vector<Node*>, comparator> pq;
-   unordered_map<char, string> encoderMap;
-   unordered_map<string, char> decoderMap;
-   unordered_map<char, long long> frequencyMap;
+   map<char, string> encoderMap;
+   map<string, char> decoderMap;
+   map<char, long long int> frequencyMap;
 
    void buildHuffmanCodes(Node *node, string &path) {
       if (node == NULL) {
          return;
       }
 
-      if (node -> data != '$') {
+      if (node -> data != '\0') {
          encoderMap[node -> data] = path;
          decoderMap[path] = node -> data;
          return;
@@ -69,7 +69,7 @@ public:
          pq.pop();
 
          Node *node = (Node*) malloc(sizeof(Node));
-         node -> data = '$';
+         node -> data = '\0';
          node -> freq = (top1 -> freq) + (top2 -> freq);
          node -> left = top2;
          node -> right = top1;
@@ -170,12 +170,23 @@ int main() {
    HuffmanEncoder hf;
 
    string compressedData = hf.encode(data);
+   // string decompressedData = hf.decode(compressedData);
+   // cout << decompressedData;
 
-   // int i = 1;
-   // for (auto tmp: hf.encoderMap) {
-   //    cout << i << " " << tmp.first << " " << tmp.second << "\n";
-   //    i++;
+   // ofstream outFile("output.txt", ios::out);
+   // for (char cc: decompressedData) {
+   //    outFile.put(cc);
    // }
+
+   for (auto tmp: hf.frequencyMap) {
+      cout << tmp.first << " " << tmp.second << "\n";
+   }
+
+   cout << "|||||||||||||||||||||||\n\n";
+
+   for (auto tmp: hf.encoderMap) {
+      cout << tmp.first << " " << tmp.second << "\n";
+   }
 
    int countOfUniqueCharacters = hf.frequencyMap.size();
    string mapData = numberToBinaryString(countOfUniqueCharacters, 8);
@@ -183,24 +194,24 @@ int main() {
    // cout << countOfUniqueCharacters << "\n";
    // cout << mapData << "\n";
 
-   cout << hf.frequencyMap.size() << "\n";
+   // cout << hf.frequencyMap.size() << "\n";
    for (auto tmp: hf.frequencyMap) {
       int ch = tmp.first - '\0';
       int f = tmp.second;
 
-      cout << tmp.first << " " << tmp.second << "\n";
+      // cout << tmp.first << " " << tmp.second << "\n";
 
       string key = numberToBinaryString(ch, 8);
-      string freq = numberToBinaryString(f, 8);
+      string freq = numberToBinaryString(f, 64);
       mapData += key + freq;
    }
 
-   string countOfBitsInData = numberToBinaryString(compressedData.size(), 32);
+   string countOfBitsInData = numberToBinaryString(compressedData.size(), 64);
 
    string binaryData = mapData + countOfBitsInData + compressedData;
 
-   cout << compressedData.size() << "\n";
-   cout << compressedData << "\n";
+   // cout << compressedData.size() << "\n";
+   // cout << compressedData << "\n";
 
    createCompressedBinary(binaryData);
    return 0;
