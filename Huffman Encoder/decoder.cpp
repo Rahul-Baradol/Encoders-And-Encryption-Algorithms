@@ -1,4 +1,7 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <map>
+#include <vector>
+#include <queue>
 #include <fstream>
 
 using namespace std;
@@ -16,7 +19,7 @@ struct comparator {
    }
 };
 
-class HuffmanEncoder {
+class HuffmanDecoder {
 public:
    priority_queue<Node*, vector<Node*>, comparator> pq;
    map<char, string> encoderMap;
@@ -44,7 +47,7 @@ public:
       path.pop_back();
    }
 
-   void buildMaps(map<char, long long int> frequencyMap) {
+   void buildHuffmanTree(map<char, long long int> &frequencyMap) {
       for (auto tmp: frequencyMap) {
          char character = tmp.first;
          long long int frequency = tmp.second;
@@ -96,7 +99,7 @@ int main() {
    ifstream file("compressed.bin", ios::binary);
 
    if (!file.is_open()) {
-      std::cerr << "Error opening file!" << std::endl;
+      cerr << "Error opening file!" << endl;
       return 1;
    }
 
@@ -104,83 +107,72 @@ int main() {
 
    vector<char> buffer(istreambuf_iterator<char>(file), {});
    
-   int size = 0;
+   int frequencyMapSize = 0;
 
-   for (int bit = 7; bit >= 0; bit--) {
-      bool bbb = buffer[0] & (1 << bit);
-      if (bbb) {
-         size += 1 << bit;
+   // First byte is frequency map's size
+   for (int bitPosition = 7; bitPosition >= 0; bitPosition--) {
+      bool bit = buffer[0] & (1 << bitPosition);
+      if (bit) {
+         frequencyMapSize += 1 << bitPosition;
       }
    }
 
-   int i = 2;
-   while (size--) {
-      char ch = buffer[i-1];
-      long long freq = 0;
+   int bufferPtr = 2;
+   while (frequencyMapSize--) {
+      char ch = buffer[bufferPtr-1];
+      long long int freq = 0;
 
-      for (int l = 7; l >= 0; l--) {
-         for (int k = 7; k >= 0; k--) {
-            bool bit = buffer[i] & (1 << k);
-            if (bit)
-               freq += 1 << (k + (8 * l));
+      for (int byte = 7; byte >= 0; byte--) {
+         for (int bitPosition = 7; bitPosition >= 0; bitPosition--) {
+            bool bit = buffer[bufferPtr] & (1 << bitPosition);
+            if (bit) {
+               freq += 1 << (bitPosition + (8 * byte));
+            }
          }
-         i++;
+         bufferPtr++;
       }
 
       frequencyMap[ch] = freq;
 
-      // i += 2;
-      i++;
+      bufferPtr++;
    }
 
-   // cout << frequencyMap.size() << "\n";
-   for (auto tmp: frequencyMap) {
-      cout << tmp.first << " " << tmp.second << "\n";
-   }
+   bufferPtr--;
 
-   i--;
-
-   long long int sizeOfData = 0;
-   for (int l = 7; l >= 0; l--) {
-      for (int k = 7; k >= 0; k--) {
-         bool bit = int(buffer[i]) & (1 << k);
-         if (bit)
-            sizeOfData += 1 << (k + (8 * l));
+   long long int dataSize = 0;
+   for (int byte = 7; byte >= 0; byte--) {
+      for (int bitPosition = 7; bitPosition >= 0; bitPosition--) {
+         bool bit = buffer[bufferPtr] & (1 << bitPosition);
+         if (bit) {
+            dataSize += 1 << (bitPosition + (8 * byte));
+         }
       }
-      i++;
+      bufferPtr++;
    }
-   // cout << "count of bits: " << sizeOfData << "\n";
 
    string data = "";
    long long int currentBitCount = 0;
 
-   for (; i < buffer.size(); i++) {
-      // cout << int(buffer[i]) << "\n";
-      for (int j = 7; j >= 0; j--) {
+   for (; bufferPtr < buffer.size(); bufferPtr++) {
+      for (int bitPosition = 7; bitPosition >= 0; bitPosition--) {
          currentBitCount++;
-         if (currentBitCount > sizeOfData) break;
-         bool bit = char(buffer[i]) & (1 << j);
+         if (currentBitCount > dataSize) break;
+         bool bit = buffer[bufferPtr] & (1 << bitPosition);
          data += bit + '0';
       }
    }
 
-   HuffmanEncoder hf;
-   hf.buildMaps(frequencyMap);
-
-   cout << "|||||||||||||||||||||||\n\n";
-
-   for (auto tmp: hf.encoderMap) {
-      cout << tmp.first << " " << tmp.second << "\n";
-   }
+   HuffmanDecoder hf;
+   hf.buildHuffmanTree(frequencyMap);
 
    string decompressedData = hf.decode(data);
-   cout << decompressedData;
 
    ofstream outFile("output.txt", ios::binary);
    for (char cc: decompressedData) {
       outFile.put(cc);
    }
 
-   file.close();
+   outFile.close();
+   file.close();  
    return 0;
 }

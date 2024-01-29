@@ -1,4 +1,10 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <map>
+#include <vector>
+#include <queue>
+#include <string>
+#include <fstream>
+#include <algorithm>
 
 using namespace std;
 
@@ -19,7 +25,6 @@ class HuffmanEncoder {
 public:
    priority_queue<Node*, vector<Node*>, comparator> pq;
    map<char, string> encoderMap;
-   map<string, char> decoderMap;
    map<char, long long int> frequencyMap;
 
    void buildHuffmanCodes(Node *node, string &path) {
@@ -29,7 +34,6 @@ public:
 
       if (node -> data != '\0') {
          encoderMap[node -> data] = path;
-         decoderMap[path] = node -> data;
          return;
       }
 
@@ -44,7 +48,7 @@ public:
       path.pop_back();
    }
 
-   string encode(string data) {
+   string buildHuffmanTree_And_Encode(string &data) {
       for (char c: data) {
          frequencyMap[c]++;
       }
@@ -86,20 +90,6 @@ public:
       }
       return encodedString;
    }
-
-   string decode(string encodedString) {
-      string tmp = "";
-      string decodedString = "";
-      for (char c: encodedString) {
-         tmp.push_back(c);
-         if (decoderMap.find(tmp) != decoderMap.end()) {
-            decodedString += decoderMap[tmp];
-            tmp = "";
-         }
-      }
-
-      return decodedString;
-   }
 };
 
 void createCompressedBinary(string compressedData) {
@@ -116,8 +106,9 @@ void createCompressedBinary(string compressedData) {
    }
 
    if (!byte.empty()) {
-      while (byte.size() < 8)
+      while (byte.size() < 8) {
          byte += "0";
+      }
       char ch = stoi(byte, nullptr, 2);
       outFile.put(ch);
    }
@@ -135,7 +126,7 @@ string readFromFile(const string& filename) {
    return data;
 }
 
-string numberToBinaryString(long long number, int size) {
+string numberToBinaryString(long long int number, int byteCount) {
    string s = "";
    while (number > 0) {
       bool rem = number % 2;
@@ -144,7 +135,7 @@ string numberToBinaryString(long long number, int size) {
       s += '0' + rem;
    }
 
-   while (s.size() < size) {
+   while (s.size() < (byteCount * 8)) {
       s.push_back('0');
    }
 
@@ -157,61 +148,35 @@ int main() {
     * Map Data
       Count of unique characters ===> 1 byte
       character 1 ===> 1 byte
-      frequency of character 1 ===> 1 byte
+      frequency of character 1 ===> 8 bytes
       ....
     
     * Main Data
-      total size ===> 4 byte
+      total size ===> 8 bytes
       1101010101010........
-   */
-
+   */ 
+  
    string data = readFromFile("data.txt");
 
    HuffmanEncoder hf;
-
-   string compressedData = hf.encode(data);
-   // string decompressedData = hf.decode(compressedData);
-   // cout << decompressedData;
-
-   // ofstream outFile("output.txt", ios::out);
-   // for (char cc: decompressedData) {
-   //    outFile.put(cc);
-   // }
-
-   for (auto tmp: hf.frequencyMap) {
-      cout << tmp.first << " " << tmp.second << "\n";
-   }
-
-   cout << "|||||||||||||||||||||||\n\n";
-
-   for (auto tmp: hf.encoderMap) {
-      cout << tmp.first << " " << tmp.second << "\n";
-   }
+   string compressedData = hf.buildHuffmanTree_And_Encode(data);
 
    int countOfUniqueCharacters = hf.frequencyMap.size();
-   string mapData = numberToBinaryString(countOfUniqueCharacters, 8);
+   string mapSize = numberToBinaryString(countOfUniqueCharacters, 1);
 
-   // cout << countOfUniqueCharacters << "\n";
-   // cout << mapData << "\n";
-
-   // cout << hf.frequencyMap.size() << "\n";
+   string mapData = "";
    for (auto tmp: hf.frequencyMap) {
       int ch = tmp.first - '\0';
       int f = tmp.second;
 
-      // cout << tmp.first << " " << tmp.second << "\n";
-
-      string key = numberToBinaryString(ch, 8);
-      string freq = numberToBinaryString(f, 64);
+      string key = numberToBinaryString(ch, 1);
+      string freq = numberToBinaryString(f, 8);
       mapData += key + freq;
    }
 
-   string countOfBitsInData = numberToBinaryString(compressedData.size(), 64);
+   string dataSize_BitCount = numberToBinaryString(compressedData.size(), 8);
 
-   string binaryData = mapData + countOfBitsInData + compressedData;
-
-   // cout << compressedData.size() << "\n";
-   // cout << compressedData << "\n";
+   string binaryData = mapSize + mapData + dataSize_BitCount + compressedData;
 
    createCompressedBinary(binaryData);
    return 0;
